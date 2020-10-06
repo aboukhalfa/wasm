@@ -1,0 +1,162 @@
+﻿@page "/mawaqit"
+
+<div id="container" dir="rtl">
+    <div id="left" style="width: @(Position)%; display: inline-block; *display: inline; zoom: 1; vertical-align: top; font-size: 12px;"></div>
+    <div id="middle" style="width: 17%; background: #FFAAFF; display: inline-block; *display: inline; zoom: 1; vertical-align: top; font-size: 12px;">
+      <Card Title=@DateTime.Now.ToString("HH:mm")
+        Value=@Position.ToString()/>
+    </div>
+    <div id="right" style="width: @(81-Position)%; display: inline-block; *display: inline; zoom: 1; vertical-align: top; font-size: 12px;"></div>
+</div>
+
+<!-- 5 Titles/Times -->
+<div class="row" dir="rtl">
+  <div class="col-sm-1" style="padding: 0px; border: transparent; border-width: 3px;"/>
+    @foreach (var value in Values)
+    {
+        <div class="col-sm-2" style="padding: 0px; border: solid;
+                border-color: @GetBorderColor(value.IsSelected);
+                border-width: 3px; border-top-color: @GetBorderColor(value.IsSelected, isTop:true)">
+            <Card Title=@value.Title
+                        Value=@value.Value
+                        TextColor=@(value.IsSelected ? SelectedTextColor : TextColor)
+                        BackgroundColor=@(value.IsSelected ? SelectedBackgroundColor : BackgroundColor) />
+        </div>
+    }
+  <div class="col-sm-1" style="padding: 0px; border: transparent; border-width: 3px;"/>
+</div>
+
+@code {
+
+  [Parameter]
+  public string BackgroundColor { get; set; } = "#1b8046";
+
+  [Parameter]
+  public string TextColor { get; set; } = "#FFFFFF";
+
+  [Parameter]
+  public string SelectedTextColor { get; set; } = "#FFFFFF";
+
+  [Parameter]
+  public string SelectedBackgroundColor { get; set; } = "#275eb0";
+
+  [Parameter]
+  public string DateTextColor { get; set; } = "#FFFFFF";
+
+  [Parameter]
+  public string DateBackgroundColor { get; set; } = "#943d1b";
+
+  [Parameter]
+  public string TimeTextColor { get; set; } = "#FFFFFF";
+
+  [Parameter]
+  public string TimeBackgroundColor { get; set; } = "#6b1565";
+
+  IEnumerable<(string Title, string Value, bool IsSelected)> Values {get; set;}
+
+	System.Threading.Timer _timer ; 
+  
+  int Position { get; set; }
+	protected override Task OnInitializedAsync()
+	{
+		var now = DateTime.Now;
+    var times = GetTimes(DateTime.Now);
+		Values = times.Take(1).Concat(times.Skip(2))
+			.Select(x => (x.arName, x.time.ToString("HH:mm"), false));
+
+		Position = 0;
+		_timer = new System.Threading.Timer(OnTimerTick);
+		_timer.Change(3000, 30000);
+
+		return base.OnInitializedAsync();
+	}
+
+	private void OnTimerTick(object sender)
+	{
+		var loc = Position;
+		loc++;
+		Position++; 
+		if (Position == 200) Position = 0;
+
+   var timesAndNames = GetTimes(DateTime.Now);
+	 var times = timesAndNames.Take(1).Concat(timesAndNames.Skip(2))
+			.Select(x => x.time);
+
+    var arranger = new Services.TimeArranger();
+    Position = (int)(arranger.GetArrangement(times, DateTime.Now)*100);
+
+		StateHasChanged();
+	}
+
+	private IEnumerable<(string enName, string arName, DateTime time)> GetTimes(DateTime dt)
+	{
+		var st = new Services.SalatTime();
+		st.SetCalcMethod(Services.CalculationMethod.Isna);
+
+		double latitude = 45.5977;
+		double longitude = -73.5937;
+		int timeZone = -4;
+
+		var eventTimes = st.GetTimes(dt.Year, dt.Month, dt.Day, latitude, longitude, timeZone);
+
+		// Time Names
+		String[] englishNames = { "Subh", "Sunrise", "Dhuhr", "Asr", "Sunset", "Maghrib", "Isha" };
+		// Arabic Names
+		String[] arabicNames = { "الصبح", "الشروق", "الظهر", "العصر", "الغروب", "المغرب", "العشاء" };
+		// Mixed Names
+		String[] mixedNames = { "Subh", "Sunrise", "Dhuhr", "Asr", "Sunset", "Maghrib", "Isha" };
+
+		var result = new List<(string, string, DateTime)>();
+
+		int i = 0;
+		foreach (var time in eventTimes)
+		{
+			if (i == 4)
+			{
+				i++;
+				continue;
+			}
+			result.Add((mixedNames[i], arabicNames[i], time));
+			i++;
+		}
+
+		return result;
+	}
+
+	public string GetBorderColor(bool isSelected, bool isTop = false)
+	{
+		var color = isSelected ? SelectedBackgroundColor : BackgroundColor;
+
+		if (isTop && isSelected)
+			return color;
+
+		return GetBorderColor(color);
+	}
+
+   public string GetBorderColor(string color)
+   {
+     var (r, g, b) = ToRGB(color);
+     return FromRGB(((byte)(r * 2 / 3), (byte)(g * 2 / 3), (byte)(b * 2 / 3)));
+   }
+
+   public static (byte r, byte g, byte b) ToRGB(string colorString)
+   {
+     try
+     {
+       var val = int.Parse(colorString.Substring(1), System.Globalization.NumberStyles.HexNumber);
+       var r = (byte)(val / 0x10000);
+       var g = (byte)((val & 0x00FFFF) / 0x100);
+       var b = (byte)(val & 0xFF);
+       return (r, g, b);
+     }
+     catch (Exception)
+     {
+       return (0, 0, 0);
+     }
+   }
+
+   public static string FromRGB((byte r, byte g, byte b) value)
+   {
+     return $"#{value.r:X2}{value.g:X2}{value.b:X2}";
+   }
+}

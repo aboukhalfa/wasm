@@ -1,0 +1,69 @@
+@if (Content != null)
+{
+    <div class="text-sm-center txtValue"
+         style="background-color: @BackgroundColor; color: @TextColor; font-size:@(ValueFontSize)vw">
+            @Content
+    </div>
+}
+else
+{
+  if(!string.IsNullOrEmpty(Title))
+  {
+    <div class="text-sm-center"
+      style="background-color: @BackgroundColor">
+      <div class="txtTitle" style="color: @TextColor; font-size:@(TitleFontSize)vw">
+        @Title
+      </div>
+    </div>
+  }
+    
+  if(!string.IsNullOrEmpty(Value))
+  {
+    <div class="text-sm-center"
+        style="background-color: @BackgroundColor">
+        <div class="txtValue" style="color: @TextColor; font-size:@(ValueFontSize)vw">
+          @Value
+        </div>
+    </div>
+  }
+
+  if(!string.IsNullOrEmpty(SecondaryValue))
+  {
+    <div class="text-sm-center"
+      style="background-color: @BackgroundColor">
+      <div style="color: @TextColor; font-size:@(SecondaryValueFontSize)vw">
+        @SecondaryValue
+      </div>
+    </div>
+  }
+}
+
+@code {
+    // Demonstrates how a parent component can supply parameters
+    [Parameter]
+        public RenderFragment Content { get; set; }
+
+        [Parameter]
+        public string Title { get; set; } = "Hello";
+
+        [Parameter]
+        public string Value { get; set; } = "World";
+
+        [Parameter]
+        public string SecondaryValue { get; set; } = "";
+
+        [Parameter]
+        public string BackgroundColor { get; set; } = "#2244AA";
+
+        [Parameter]
+        public string TextColor { get; set; } = "#FFFFFF";
+
+        [Parameter]
+        public string TitleFontSize { get; set; } = "4";
+
+        [Parameter]
+        public string ValueFontSize { get; set; } = "3";
+
+        [Parameter]
+        public string SecondaryValueFontSize { get; set; } = "1";
+}
